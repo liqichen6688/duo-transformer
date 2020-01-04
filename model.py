@@ -33,7 +33,8 @@ class Transformer:
     def __init__(self, hp):
         self.hp = hp
         self.token2idx, self.idx2token = load_vocab(hp.vocab)
-        self.embeddings = get_token_embeddings(self.hp.vocab_size, self.hp.d_model, zero_pad=True)
+        self.embeddings1 = get_token_embeddings(self.hp.vocab_size, self.hp.d_model, zero_pad=True)
+        self.embeddings2 = get_token_embeddings(self.hp.vocab_size, self.hp.d_model, zero_pad=True)
 
     def encode(self, xs, training=True):
         '''
@@ -46,28 +47,34 @@ class Transformer:
             # src_masks
             src_masks = tf.math.equal(x, 0) # (N, T1)
 
-            # embedding
-            enc = tf.nn.embedding_lookup(self.embeddings, x) # (N, T1, d_model)
-            enc *= self.hp.d_model**0.5 # scale
+            # embedding1
+            enc1 = tf.nn.embedding_lookup(self.embeddings1, x) # (N, T1, d_model)
+            enc1 *= self.hp.d_model**0.5 # scale
+            enc1 += positional_encoding(enc1, self.hp.maxlen1)
+            enc1 = tf.layers.dropout(enc1, self.hp.dropout_rate, training=training)
 
-            enc += positional_encoding(enc, self.hp.maxlen1)
-            enc = tf.layers.dropout(enc, self.hp.dropout_rate, training=training)
+            # embedding2
+            enc2 = tf.nn.embedding_lookup(self.embeddings1, x) # (N, T1, d_model)
+            enc2 *= self.hp.d_model**0.5 # scale
+            enc2 += positional_encoding(enc2, self.hp.maxlen1)
+            enc2 = tf.layers.dropout(enc2, self.hp.dropout_rate, training=training)
 
             ## Blocks
             for i in range(self.hp.num_blocks):
                 with tf.variable_scope("num_blocks_{}".format(i), reuse=tf.AUTO_REUSE):
                     # self-attention
-                    enc = multihead_attention(queries=enc,
-                                              keys=enc,
-                                              values=enc,
+                    enc1, enc2 = multihead_attention(queries=(enc1, enc2),
+                                              keys=(enc1, enc2),
+                                              values=(enc2, enc1),
                                               key_masks=src_masks,
                                               num_heads=self.hp.num_heads,
                                               dropout_rate=self.hp.dropout_rate,
                                               training=training,
                                               causality=False)
                     # feed forward
-                    enc = ff(enc, num_units=[self.hp.d_ff, self.hp.d_model])
-        memory = enc
+                    enc1 = ff(enc1, num_units=[self.hp.d_ff, self.hp.d_model])
+                    enc2 = ff(enc2, num_units=[self.hp.d_ff, self.hp.d_model])
+        memory = (enc1, enc2)
         return memory, sents1, src_masks
 
     def decode(self, ys, memory, src_masks, training=True):
@@ -87,20 +94,25 @@ class Transformer:
             # tgt_masks
             tgt_masks = tf.math.equal(decoder_inputs, 0)  # (N, T2)
 
-            # embedding
-            dec = tf.nn.embedding_lookup(self.embeddings, decoder_inputs)  # (N, T2, d_model)
-            dec *= self.hp.d_model ** 0.5  # scale
+            # embedding1
+            dec1 = tf.nn.embedding_lookup(self.embeddings1, decoder_inputs)  # (N, T2, d_model)
+            dec1 *= self.hp.d_model ** 0.5  # scale
+            dec1 += positional_encoding(dec1, self.hp.maxlen2)
+            dec1 = tf.layers.dropout(dec1, self.hp.dropout_rate, training=training)
 
-            dec += positional_encoding(dec, self.hp.maxlen2)
-            dec = tf.layers.dropout(dec, self.hp.dropout_rate, training=training)
+            # embedding2
+            dec2 = tf.nn.embedding_lookup(self.embeddings2, decoder_inputs)  # (N, T2, d_model)
+            dec2 *= self.hp.d_model ** 0.5  # scale
+            dec2 += positional_encoding(dec2, self.hp.maxlen2)
+            dec2 = tf.layers.dropout(dec2, self.hp.dropout_rate, training=training)
 
             # Blocks
             for i in range(self.hp.num_blocks):
                 with tf.variable_scope("num_blocks_{}".format(i), reuse=tf.AUTO_REUSE):
                     # Masked self-attention (Note that causality is True at this time)
-                    dec = multihead_attention(queries=dec,
-                                              keys=dec,
-                                              values=dec,
+                    dec1, dec2 = multihead_attention(queries=(dec1, dec2),
+                                              keys=(dec1, dec2),
+                                              values=(dec2, dec1),
                                               key_masks=tgt_masks,
                                               num_heads=self.hp.num_heads,
                                               dropout_rate=self.hp.dropout_rate,
@@ -109,9 +121,9 @@ class Transformer:
                                               scope="self_attention")
 
                     # Vanilla attention
-                    dec = multihead_attention(queries=dec,
+                    dec1, dec2 = multihead_attention(queries=(dec1, dec2),
                                               keys=memory,
-                                              values=memory,
+                                              values=(memory[1], memory[0]),
                                               key_masks=src_masks,
                                               num_heads=self.hp.num_heads,
                                               dropout_rate=self.hp.dropout_rate,
@@ -119,11 +131,12 @@ class Transformer:
                                               causality=False,
                                               scope="vanilla_attention")
                     ### Feed Forward
-                    dec = ff(dec, num_units=[self.hp.d_ff, self.hp.d_model])
+                    dec1 = ff(dec1, num_units=[self.hp.d_ff, self.hp.d_model])
+                    dec2 = ff(dec2, num_units=[self.hp.d_ff, self.hp.d_model])
 
         # Final linear projection (embedding weights are shared)
-        weights = tf.transpose(self.embeddings) # (d_model, vocab_size)
-        logits = tf.einsum('ntd,dk->ntk', dec, weights) # (N, T2, vocab_size)
+        weights = tf.transpose(tf.concat([self.embeddings1, self.embeddings2], axis=1)) # (2 * d_model, vocab_size)
+        logits = tf.einsum('ntd,dk->ntk', tf.concat([dec1, dec2], axis=1), weights) # (N, T2, vocab_size)
         y_hat = tf.to_int32(tf.argmax(logits, axis=-1))
 
         return logits, y_hat, y, sents2
