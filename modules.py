@@ -170,7 +170,7 @@ def multihead_attention(queries, keys, values, key_masks,
     Returns
       A 3d tensor with shape of (N, T_q, C)  
     '''
-    d_model = queries.get_shape().as_list()[-1]
+    d_model = queries[0].get_shape().as_list()[-1]
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         # Linear projections1
         Q1 = tf.layers.dense(queries[0], d_model, use_bias=True) # (N, T_q, d_model)
