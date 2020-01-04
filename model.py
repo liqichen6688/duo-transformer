@@ -135,8 +135,8 @@ class Transformer:
                     dec2 = ff(dec2, num_units=[self.hp.d_ff, self.hp.d_model])
 
         # Final linear projection (embedding weights are shared)
-        weights = tf.transpose(tf.concat([self.embeddings1, self.embeddings2], axis=1)) # (2 * d_model, vocab_size)
-        logits = tf.einsum('ntd,dk->ntk', tf.concat([dec1, dec2], axis=1), weights) # (N, T2, vocab_size)
+        weights = tf.transpose(tf.concat([self.embeddings1, self.embeddings2], axis=-1)) # (2 * d_model, vocab_size)
+        logits = tf.einsum('ntd,dk->ntk', tf.concat([dec1, dec2], axis=-1), weights) # (N, T2, vocab_size)
         y_hat = tf.to_int32(tf.argmax(logits, axis=-1))
 
         return logits, y_hat, y, sents2
