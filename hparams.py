@@ -30,7 +30,7 @@ class Hparams:
     parser.add_argument('--lr', default=0.0003, type=float, help="learning rate")
     parser.add_argument('--warmup_steps', default=4000, type=int)
     parser.add_argument('--logdir', default="log/2", help="log directory")
-    parser.add_argument('--num_epochs', default=20, type=int)
+    parser.add_argument('--num_epochs', default=30, type=int)
     parser.add_argument('--evaldir', default="eval/2", help="evaluation dir")
 
     # model
