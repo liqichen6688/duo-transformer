@@ -105,6 +105,9 @@ class Transformer:
             dec2 *= self.hp.d_model ** 0.5  # scale
             dec2 += positional_encoding(dec2, self.hp.maxlen2)
             dec2 = tf.layers.dropout(dec2, self.hp.dropout_rate, training=training)
+            print('examine')
+            print(memory[0].shape)
+            print(memory[1].shape)
 
             # Blocks
             for i in range(self.hp.num_blocks):
