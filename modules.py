@@ -173,36 +173,38 @@ def multihead_attention(queries, keys, values, key_masks,
     d_model = queries[0].get_shape().as_list()[-1]
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         # Linear projections1
-        Q1 = tf.layers.dense(queries[0], d_model, use_bias=True) # (N, T_q, d_model)
+        Q1 = tf.layers.dense(queries, d_model, use_bias=True) # (N, T_q, d_model)
         K1 = tf.layers.dense(keys[0], d_model, use_bias=True) # (N, T_k, d_model)
-        V1 = tf.layers.dense(values[0], d_model, use_bias=True) # (N, T_k, d_model)
+        V1 = tf.layers.dense(values, d_model, use_bias=True) # (N, T_k, d_model)
+        K2 = tf.layers.dense(keys[1], d_model, use_bias=True)  # (N, T_k, d_model)
         
         # Split and concat1
         Q1_ = tf.concat(tf.split(Q1, num_heads, axis=2), axis=0) # (h*N, T_q, d_model/h)
         K1_ = tf.concat(tf.split(K1, num_heads, axis=2), axis=0) # (h*N, T_k, d_model/h)
         V1_ = tf.concat(tf.split(V1, num_heads, axis=2), axis=0) # (h*N, T_k, d_model/h)
-
-        # Linear projections2
-        Q2 = tf.layers.dense(queries[1], d_model, use_bias=True)  # (N, T_q, d_model)
-        K2 = tf.layers.dense(keys[1], d_model, use_bias=True)  # (N, T_k, d_model)
-        V2 = tf.layers.dense(values[1], d_model, use_bias=True)  # (N, T_k, d_model)
-
-        # Split and concat2
-        Q2_ = tf.concat(tf.split(Q2, num_heads, axis=2), axis=0)  # (h*N, T_q, d_model/h)
         K2_ = tf.concat(tf.split(K2, num_heads, axis=2), axis=0)  # (h*N, T_k, d_model/h)
-        V2_ = tf.concat(tf.split(V2, num_heads, axis=2), axis=0)  # (h*N, T_k, d_model/h)
+
+        ## Linear projections2
+        #Q2 = tf.layers.dense(queries[1], d_model, use_bias=True)  # (N, T_q, d_model)
+        #K2 = tf.layers.dense(keys[1], d_model, use_bias=True)  # (N, T_k, d_model)
+        #V2 = tf.layers.dense(values[1], d_model, use_bias=True)  # (N, T_k, d_model)
+        #
+        ## Split and concat2
+        #Q2_ = tf.concat(tf.split(Q2, num_heads, axis=2), axis=0)  # (h*N, T_q, d_model/h)
+        #K2_ = tf.concat(tf.split(K2, num_heads, axis=2), axis=0)  # (h*N, T_k, d_model/h)
+        #V2_ = tf.concat(tf.split(V2, num_heads, axis=2), axis=0)  # (h*N, T_k, d_model/h)
 
         # Attention
         outputs1 = scaled_dot_product_attention(Q1_, K1_, V1_, key_masks, causality, dropout_rate, training)
-        outputs2 = scaled_dot_product_attention(Q2_, K2_, V2_, key_masks, causality, dropout_rate, training)
+        outputs2 = scaled_dot_product_attention(V1_, K2_, Q1_, key_masks, causality, dropout_rate, training)
 
         # Restore shape
         outputs1 = tf.concat(tf.split(outputs1, num_heads, axis=0), axis=2 ) # (N, T_q, d_model)
         outputs2 = tf.concat(tf.split(outputs2, num_heads, axis=0), axis=2)  # (N, T_q, d_model)
               
         # Residual connection
-        outputs1 += queries[0]
-        outputs2 += queries[1]
+        outputs1 += queries
+        outputs2 += values
               
         # Normalize
         outputs1 = ln(outputs1)

@@ -63,9 +63,9 @@ class Transformer:
             for i in range(self.hp.num_blocks):
                 with tf.variable_scope("num_blocks_{}".format(i), reuse=tf.AUTO_REUSE):
                     # self-attention
-                    enc1, enc2 = multihead_attention(queries=(enc1, enc2),
+                    enc1, enc2 = multihead_attention(queries=enc1,
                                               keys=(enc1, enc2),
-                                              values=(enc2, enc1),
+                                              values=enc2,
                                               key_masks=src_masks,
                                               num_heads=self.hp.num_heads,
                                               dropout_rate=self.hp.dropout_rate,
@@ -110,9 +110,9 @@ class Transformer:
             for i in range(self.hp.num_blocks):
                 with tf.variable_scope("num_blocks_{}".format(i), reuse=tf.AUTO_REUSE):
                     # Masked self-attention (Note that causality is True at this time)
-                    dec1, dec2 = multihead_attention(queries=(dec1, dec2),
+                    dec1, dec2 = multihead_attention(queries=dec1,
                                               keys=(dec1, dec2),
-                                              values=(dec2, dec1),
+                                              values=dec2,
                                               key_masks=tgt_masks,
                                               num_heads=self.hp.num_heads,
                                               dropout_rate=self.hp.dropout_rate,
@@ -121,9 +121,9 @@ class Transformer:
                                               scope="self_attention")
 
                     # Vanilla attention
-                    dec1, dec2 = multihead_attention(queries=(dec1, dec2),
+                    dec1, dec2 = multihead_attention(queries=dec1,
                                               keys=memory,
-                                              values=(memory[1], memory[0]),
+                                              values=dec2,
                                               key_masks=src_masks,
                                               num_heads=self.hp.num_heads,
                                               dropout_rate=self.hp.dropout_rate,
