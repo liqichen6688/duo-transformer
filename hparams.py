@@ -29,9 +29,9 @@ class Hparams:
 
     parser.add_argument('--lr', default=0.0003, type=float, help="learning rate")
     parser.add_argument('--warmup_steps', default=4000, type=int)
-    parser.add_argument('--logdir', default="log/3", help="log directory")
+    parser.add_argument('--logdir', default="log/4", help="log directory")
     parser.add_argument('--num_epochs', default=30, type=int)
-    parser.add_argument('--evaldir', default="eval/3", help="evaluation dir")
+    parser.add_argument('--evaldir', default="eval/4", help="evaluation dir")
 
     # model
     parser.add_argument('--d_model', default=512, type=int,
@@ -46,8 +46,8 @@ class Hparams:
                         help="maximum length of a source sequence")
     parser.add_argument('--maxlen2', default=100, type=int,
                         help="maximum length of a target sequence")
-    parser.add_argument('--dropout_rate', default=0.3, type=float)
-    parser.add_argument('--smoothing', default=0.1, type=float,
+    parser.add_argument('--dropout_rate', default=0.1, type=float)
+    parser.add_argument('--smoothing', default=0.2, type=float,
                         help="label smoothing rate")
 
     # test
@@ -57,4 +57,4 @@ class Hparams:
                         help="english test data")
     parser.add_argument('--ckpt', help="checkpoint file path")
     parser.add_argument('--test_batch_size', default=128, type=int)
-    parser.add_argument('--testdir', default="test/3", help="test result dir")
+    parser.add_argument('--testdir', default="test/4", help="test result dir")
