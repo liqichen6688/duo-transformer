@@ -54,7 +54,7 @@ class Transformer:
             enc1 = tf.layers.dropout(enc1, self.hp.dropout_rate, training=training)
 
             # embedding2
-            enc2 = tf.nn.embedding_lookup(self.embeddings1, x) # (N, T1, d_model)
+            enc2 = tf.nn.embedding_lookup(self.embeddings2, x) # (N, T1, d_model)
             enc2 *= self.hp.d_model**0.5 # scale
             enc2 += positional_encoding(enc2, self.hp.maxlen1)
             enc2 = tf.layers.dropout(enc2, self.hp.dropout_rate, training=training)
