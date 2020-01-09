@@ -29,9 +29,9 @@ class Hparams:
 
     parser.add_argument('--lr', default=0.0003, type=float, help="learning rate")
     parser.add_argument('--warmup_steps', default=4000, type=int)
-    parser.add_argument('--logdir', default="log/5", help="log directory")
+    parser.add_argument('--logdir', default="log/6", help="log directory")
     parser.add_argument('--num_epochs', default=30, type=int)
-    parser.add_argument('--evaldir', default="eval/5", help="evaluation dir")
+    parser.add_argument('--evaldir', default="eval/6", help="evaluation dir")
 
     # model
     parser.add_argument('--d_model', default=512, type=int,
@@ -57,4 +57,4 @@ class Hparams:
                         help="english test data")
     parser.add_argument('--ckpt', help="checkpoint file path")
     parser.add_argument('--test_batch_size', default=128, type=int)
-    parser.add_argument('--testdir', default="test/5", help="test result dir")
+    parser.add_argument('--testdir', default="test/6", help="test result dir")
