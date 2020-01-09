@@ -80,6 +80,7 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
         # scale
         #outputs /= d_k ** 0.5
 
+
         # key masking
         #outputs = mask(outputs, key_masks=key_masks, type="key")
 
