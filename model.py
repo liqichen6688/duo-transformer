@@ -129,6 +129,7 @@ class Transformer:
                                               dropout_rate=self.hp.dropout_rate,
                                               training=training,
                                               causality=False,
+                                              memory=True,
                                               scope="vanilla_attention")
                     ### Feed Forward
                     dec1 = ff(dec1, num_units=[self.hp.d_ff, self.hp.d_model])

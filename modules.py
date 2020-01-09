@@ -55,7 +55,7 @@ def get_token_embeddings(vocab_size, num_units, scope=0,zero_pad=True):
 def scaled_dot_product_attention(Q, K, V, key_masks,
                                  causality=False, dropout_rate=0.,
                                  training=True,
-                                 scope="scaled_dot_product_attention"):
+                                 scope="scaled_dot_product_attention", memory=False):
     '''See 3.2.1.
     Q: Packed queries. 3d tensor. [N, T_q, d_k].
     K: Packed keys. 3d tensor. [N, T_k, d_k].
@@ -73,8 +73,9 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
         # dot product
         #outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
         Q = mask(Q, key_masks=key_masks, type="key", zero=True)
-        K = mask(K, key_masks=key_masks, type="key", zero=True)
-        V = mask(V, key_masks=key_masks, type="key", zero=True)
+        if not memory:
+            K = mask(K, key_masks=key_masks, type="key", zero=True)
+            V = mask(V, key_masks=key_masks, type="key", zero=True)
 
         # scale
         #outputs /= d_k ** 0.5
@@ -188,7 +189,8 @@ def multihead_attention(queries, keys, values, key_masks,
                         dropout_rate=0,
                         training=True,
                         causality=False,
-                        scope="multihead_attention"):
+                        scope="multihead_attention",
+                        memory=False):
     '''Applies multihead attention. See 3.2.2
     queries: A 3d tensor with shape of [N, T_q, d_model].
     keys: A 3d tensor with shape of [N, T_k, d_model].
@@ -229,8 +231,8 @@ def multihead_attention(queries, keys, values, key_masks,
         #V2_ = tf.concat(tf.split(V2, num_heads, axis=2), axis=0)  # (h*N, T_k, d_model/h)
 
         # Attention
-        outputs1 = scaled_dot_product_attention(Q1_, K_, V_, key_masks, causality, dropout_rate, training)
-        outputs2 = scaled_dot_product_attention(Q2_, V_, K_, key_masks, causality, dropout_rate, training)
+        outputs1 = scaled_dot_product_attention(Q1_, K_, V_, key_masks, causality, dropout_rate, training, memory=memory)
+        outputs2 = scaled_dot_product_attention(Q2_, V_, K_, key_masks, causality, dropout_rate, training, memory=memory)
 
         # Restore shape
         outputs1 = tf.concat(tf.split(outputs1, num_heads, axis=0), axis=2 ) # (N, T_q, d_model)
