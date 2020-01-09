@@ -84,7 +84,10 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
 
         # causality or future blinding masking
         if causality:
-            outputs = future_mask(Q, K, V)
+            outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
+            outputs = mask(outputs, type="future")
+            outputs = tf.nn.softmax(outputs)
+            outputs = tf.matmul(outputs, V)  # (N, T_q, d_v)
         else:
             length = tf.reduce_sum(1 - tf.to_float(key_masks), axis=-1, keepdims=True)
             length = tf.expand_dims(length, 2)
