@@ -142,7 +142,8 @@ def mask(inputs, key_masks=None, type=None, zero=False):
     if type in ("k", "key", "keys"):
         key_masks = tf.to_float(key_masks)
         key_masks = tf.tile(key_masks, [tf.shape(inputs)[0] // tf.shape(key_masks)[0], 1]) # (h*N, seqlen)
-        key_masks = tf.expand_dims(key_masks, 1)  # (h*N, 1, seqlen)
+        #key_masks = tf.expand_dims(key_masks, 1)  # (h*N, 1, seqlen)
+        key_masks = tf.tile(tf.expand_dims(key_masks, 2),[1, 1, tf.shape(inputs)[-1]])
         if zero:
             outputs = inputs * (1. - key_masks)
         else:
