@@ -85,7 +85,7 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
         if causality:
             outputs = future_mask(Q, K, V)
         else:
-            outputs = ln(tf.matmul(tf.matmul(Q, tf.transpose(K, [0, 2, 1])), V),scope='in')
+            outputs = ln(tf.matmul(tf.matmul(Q, tf.transpose(K, [0, 2, 1])), V))
 
 
         # softmax
