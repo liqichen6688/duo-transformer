@@ -87,6 +87,7 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
             outputs = future_mask(Q, K, V)
         else:
             length = tf.reduce_sum(1 - tf.to_float(key_masks), axis=-1, keepdims=True)
+            length = tf.expand_dims(length, 2)
             length = tf.tile(length, [1, d_k, d_v])
             duo = tf.matmul(tf.transpose(K, [0, 2, 1]),V) / length
             outputs = tf.matmul(Q, duo)
