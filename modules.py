@@ -238,14 +238,15 @@ def multihead_attention(queries, keys, values, key_masks,
         # Restore shape
         outputs1 = tf.concat(tf.split(outputs1, num_heads, axis=0), axis=2 ) # (N, T_q, d_model)
         outputs2 = tf.concat(tf.split(outputs2, num_heads, axis=0), axis=2)  # (N, T_q, d_model)
-              
-        # Residual connection
-        outputs1 += queries[0]
-        outputs2 += queries[1]
+
               
         # Normalize
         outputs1 = ln(outputs1)
         outputs2 = ln(outputs2)
+
+        # Residual connection
+        outputs1 += queries[0]
+        outputs2 += queries[1]
  
     return outputs1, outputs2
 
