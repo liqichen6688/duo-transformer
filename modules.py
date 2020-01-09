@@ -109,7 +109,7 @@ def future_mask(Q, K, V):
     #print(Q.get_shape().as_list())
     #d_q = Q.get_shape().as_list()[-2]
     for i in range(100):
-        outputs.append(ln(tf.matmul(tf.matmul(Q[:, i:i+1, :], tf.transpose(K[:, :i, :], [0, 2, 1])), V[:, :i, :]),scope='in'))
+        outputs.append(ln(tf.matmul(tf.matmul(Q[:, i:i+1, :], tf.transpose(K[:, :i+1, :], [0, 2, 1])), V[:, :i, :]),scope='in'))
     outputs = tf.concat(outputs, axis=-2)
     return outputs
 
