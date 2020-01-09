@@ -92,8 +92,8 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
             length = tf.reduce_sum(1 - tf.to_float(key_masks), axis=-1, keepdims=True)
             length = tf.expand_dims(length, 2)
             length = tf.tile(length, [1, d_k, d_v])
-            print(K.get_shape())
-            duo = tf.matmul(tf.transpose(K, [0, 2, 1]), V) / length
+            #print(K.get_shape())
+            duo = tf.matmul(tf.transpose(K, [0, 2, 1]), V)
             outputs = tf.matmul(Q, duo)
 
         # softmax
