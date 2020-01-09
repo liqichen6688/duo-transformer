@@ -72,10 +72,10 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
 
         # dot product
         #outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
-        Q = mask(Q, key_masks=key_masks, type="key", zero=True)
+        K = mask(K, key_masks=key_masks, type="key", zero=True)
+        V = mask(V, key_masks=key_masks, type="key", zero=True)
         if not memory:
-            K = mask(K, key_masks=key_masks, type="key", zero=True)
-            V = mask(V, key_masks=key_masks, type="key", zero=True)
+            Q = mask(Q, key_masks=key_masks, type="key", zero=True)
 
         # scale
         #outputs /= d_k ** 0.5
