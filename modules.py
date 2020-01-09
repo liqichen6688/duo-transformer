@@ -23,7 +23,6 @@ def ln(inputs, epsilon = 1e-8, scope="ln"):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         inputs_shape = inputs.get_shape()
         params_shape = inputs_shape[-1:]
-    
         mean, variance = tf.nn.moments(inputs, [-1], keep_dims=True)
         beta= tf.get_variable("beta", params_shape, initializer=tf.zeros_initializer())
         gamma = tf.get_variable("gamma", params_shape, initializer=tf.ones_initializer())
@@ -71,22 +70,28 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
         d_k = Q.get_shape().as_list()[-1]
 
         # dot product
-        outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
+        #outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
+        Q = mask(Q, key_masks=key_masks, type="key", zero=True)
+        K = mask(K, key_masks=key_masks, type="key", zero=True)
+        V = mask(V, key_masks=key_masks, type="key", zero=True)
 
         # scale
-        outputs /= d_k ** 0.5
+        #outputs /= d_k ** 0.5
 
         # key masking
-        outputs = mask(outputs, key_masks=key_masks, type="key")
+        #outputs = mask(outputs, key_masks=key_masks, type="key")
 
         # causality or future blinding masking
         if causality:
-            outputs = mask(outputs, type="future")
+            outputs = future_mask(Q, K, V)
+        else:
+            outputs = ln(tf.matmul(tf.matmul(Q, tf.transpose(K, [0, 2, 1])), V),scope='in')
+
 
         # softmax
-        outputs = tf.nn.softmax(outputs)
-        attention = tf.transpose(outputs, [0, 2, 1])
-        tf.summary.image("attention", tf.expand_dims(attention[:1], -1))
+        #outputs = tf.nn.softmax(outputs)
+        #attention = tf.transpose(outputs, [0, 2, 1])
+        #tf.summary.image("attention", tf.expand_dims(attention[:1], -1))
 
         # # query masking
         # outputs = mask(outputs, Q, K, type="query")
@@ -95,12 +100,20 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
         outputs = tf.layers.dropout(outputs, rate=dropout_rate, training=training)
 
         # weighted sum (context vectors)
-        outputs = tf.matmul(outputs, V)  # (N, T_q, d_v)
+        #outputs = tf.matmul(outputs, V)  # (N, T_q, d_v)
 
     return outputs
 
+def future_mask(Q, K, V):
+    outputs = []
+    d_q = Q.get_shape().as_list()[-2]
+    for i in range(d_q):
+        outputs.append(ln(tf.matmul(tf.matmul(Q[:, :i, :], tf.transpose(K[:, :i, :], [0, 2, 1])), V[:, :i, :]),scope='in'))
+    outputs = tf.concat(outputs, concat_dim=-2)
+    return outputs
 
-def mask(inputs, key_masks=None, type=None):
+
+def mask(inputs, key_masks=None, type=None, zero=False):
     """Masks paddings on keys or queries to inputs
     inputs: 3d tensor. (h*N, T_q, T_k)
     key_masks: 3d tensor. (N, 1, T_k)
@@ -128,7 +141,10 @@ def mask(inputs, key_masks=None, type=None):
         key_masks = tf.to_float(key_masks)
         key_masks = tf.tile(key_masks, [tf.shape(inputs)[0] // tf.shape(key_masks)[0], 1]) # (h*N, seqlen)
         key_masks = tf.expand_dims(key_masks, 1)  # (h*N, 1, seqlen)
-        outputs = inputs + key_masks * padding_num
+        if zero:
+            outputs = inputs * (1. - key_masks)
+        else:
+            outputs = inputs + key_masks * padding_num
     # elif type in ("q", "query", "queries"):
     #     # Generate masks
     #     masks = tf.sign(tf.reduce_sum(tf.abs(queries), axis=-1))  # (N, T_q)
@@ -141,13 +157,13 @@ def mask(inputs, key_masks=None, type=None):
         diag_vals = tf.ones_like(inputs[0, :, :])  # (T_q, T_k)
         tril = tf.linalg.LinearOperatorLowerTriangular(diag_vals).to_dense()  # (T_q, T_k)
         future_masks = tf.tile(tf.expand_dims(tril, 0), [tf.shape(inputs)[0], 1, 1])  # (N, T_q, T_k)
-
         paddings = tf.ones_like(future_masks) * padding_num
         outputs = tf.where(tf.equal(future_masks, 0), paddings, inputs)
     else:
         print("Check if you entered type correctly!")
 
     return outputs
+
 
 
 def multihead_attention(queries, keys, values, key_masks,
@@ -173,12 +189,10 @@ def multihead_attention(queries, keys, values, key_masks,
     d_model = queries[0].get_shape().as_list()[-1]
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         # Linear projections1
-        #Q1 = tf.layers.dense(queries[0], d_model, use_bias=True) # (N, T_q, d_model)
-        Q1 = queries[0]
+        Q1 = tf.layers.dense(queries[0], d_model, use_bias=True) # (N, T_q, d_model)
         K = tf.layers.dense(keys, d_model, use_bias=True) # (N, T_k, d_model)
         V = tf.layers.dense(values, d_model, use_bias=True) # (N, T_k, d_model)
-        #Q2 = tf.layers.dense(queries[1], d_model, use_bias=True)  # (N, T_k, d_model)
-        Q2 = queries[1]
+        Q2 = tf.layers.dense(queries[1], d_model, use_bias=True)  # (N, T_k, d_model)
         
         # Split and concat1
         Q1_ = tf.concat(tf.split(Q1, num_heads, axis=2), axis=0) # (h*N, T_q, d_model/h)
