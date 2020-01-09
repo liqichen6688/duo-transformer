@@ -105,13 +105,20 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
     return outputs
 
 def future_mask(Q, K, V):
+    duo = 0
     outputs = []
-    #print(Q.get_shape().as_list())
-    #d_q = Q.get_shape().as_list()[-2]
     for i in range(100):
-        outputs.append(ln(tf.matmul(tf.matmul(Q[:, i:i+1, :], tf.transpose(K[:, :i+1, :], [0, 2, 1])), V[:, :i+1, :]),scope='in'))
+        duo += tf.matmul(tf.transpose(K[:, i:i+1, :], [0, 2, 1]),V[:, i:i+1, :])
+        outputs.append(tf.matmul(Q, duo/(i+1)))
     outputs = tf.concat(outputs, axis=-2)
     return outputs
+
+    #print(Q.get_shape().as_list())
+    #d_q = Q.get_shape().as_list()[-2]
+    #for i in range(100):
+    #    outputs.append(ln(tf.matmul(tf.matmul(Q[:, i:i+1, :], tf.transpose(K[:, :i+1, :], [0, 2, 1])), V[:, :i+1, :]),scope='in'))
+    #outputs = tf.concat(outputs, axis=-2)
+    #return outputs
 
 
 
