@@ -114,6 +114,7 @@ def future_mask(Q, K, V):
     return outputs
 
 
+
 def mask(inputs, key_masks=None, type=None, zero=False):
     """Masks paddings on keys or queries to inputs
     inputs: 3d tensor. (h*N, T_q, T_k)
