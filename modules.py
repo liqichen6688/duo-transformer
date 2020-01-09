@@ -68,6 +68,7 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
     '''
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         d_k = Q.get_shape().as_list()[-1]
+        d_v = V.get_shape().as_list()[-1]
 
         # dot product
         #outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
@@ -85,7 +86,10 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
         if causality:
             outputs = future_mask(Q, K, V)
         else:
-            outputs = ln(tf.matmul(tf.matmul(Q, tf.transpose(K, [0, 2, 1])), V))
+            length = tf.reduce_sum(1 - tf.to_float(key_masks), axis=-1)
+            length = tf.tile(length, [1, d_k, d_v])
+            duo = tf.matmul(tf.transpose(K, [0, 2, 1]),V) / length
+            outputs = tf.matmul(Q, duo)
 
 
         # softmax
