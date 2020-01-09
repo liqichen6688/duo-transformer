@@ -109,8 +109,8 @@ def future_mask(Q, K, V):
     outputs = []
     for i in range(100):
         duo += tf.matmul(tf.transpose(K[:, i:i+1, :], [0, 2, 1]),V[:, i:i+1, :])
-        outputs.append(tf.matmul(Q, duo/(i+1)))
-    outputs = tf.concat(outputs[:, i:i+1, :], axis=-2)
+        outputs.append(tf.matmul(Q[:, i:i+1, :], duo/(i+1)))
+    outputs = tf.concat(outputs, axis=-2)
     return outputs
 
     #print(Q.get_shape().as_list())
