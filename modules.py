@@ -86,15 +86,16 @@ def scaled_dot_product_attention(Q, K, V, key_masks,
 
         # causality or future blinding masking
         if causality:
-            outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]))  # (N, T_q, T_k)
+            outputs = tf.matmul(Q, tf.transpose(K, [0, 2, 1]) / d_k ** 0.5)  # (N, T_q, T_k)
             outputs = mask(outputs, type="future")
             outputs = tf.nn.softmax(outputs)
             outputs = tf.matmul(outputs, V)  # (N, T_q, d_v)
         else:
-            length = tf.reduce_sum(1 - tf.to_float(key_masks), axis=-1, keepdims=True)
-            length = tf.expand_dims(length, 2)
-            length = tf.tile(length, [1, d_k, d_v])
+            #length = tf.reduce_sum(1 - tf.to_float(key_masks), axis=-1, keepdims=True)
+            #length = tf.expand_dims(length, 2)
+            #length = tf.tile(length, [1, d_k, d_v])
             duo = tf.matmul(tf.transpose(K, [0, 2, 1]), V)
+            duo = tf.nn.relu(duo)
             outputs = tf.matmul(Q, duo)
 
         # softmax
@@ -239,14 +240,14 @@ def multihead_attention(queries, keys, values, key_masks,
         outputs1 = tf.concat(tf.split(outputs1, num_heads, axis=0), axis=2 ) # (N, T_q, d_model)
         outputs2 = tf.concat(tf.split(outputs2, num_heads, axis=0), axis=2)  # (N, T_q, d_model)
 
+        # Residual connection
+        outputs1 += queries[0]
+        outputs2 += queries[1]
               
         # Normalize
         outputs1 = ln(outputs1)
         outputs2 = ln(outputs2)
 
-        # Residual connection
-        outputs1 += queries[0]
-        outputs2 += queries[1]
  
     return outputs1, outputs2
 

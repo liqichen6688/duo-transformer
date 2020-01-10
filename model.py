@@ -75,7 +75,6 @@ class Transformer:
                     enc1 = ff(enc1, num_units=[self.hp.d_ff, self.hp.d_model])
                     enc2 = ff(enc2, num_units=[self.hp.d_ff, self.hp.d_model])
         memory = (enc1, enc2)
-        self.memory = enc1
         return memory, sents1, src_masks
 
 
@@ -136,7 +135,7 @@ class Transformer:
                     ### Feed Forward
                     dec1 = ff(dec1, num_units=[self.hp.d_ff, self.hp.d_model])
                     dec2 = ff(dec2, num_units=[self.hp.d_ff, self.hp.d_model])
-
+        self.dec = dec1
         # Final linear projection (embedding weights are shared)
         weights = tf.transpose(tf.concat([self.embeddings1, self.embeddings2], axis=-1)) # (2 * d_model, vocab_size)
         logits = tf.einsum('ntd,dk->ntk', tf.concat([dec1, dec2], axis=-1), weights) # (N, T2, vocab_size)
