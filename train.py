@@ -69,8 +69,6 @@ with tf.Session() as sess:
         epoch = math.ceil(_gs / num_train_batches)
         summary_writer.add_summary(_summary, _gs)
 
-        print(sess.run(m.dec))
-
         if _gs and _gs % num_train_batches == 0:
             logging.info("epoch {} is done".format(epoch))
             _loss = sess.run(loss) # train loss
