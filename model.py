@@ -74,7 +74,7 @@ class Transformer:
                     # feed forward
                     enc1 = ff(enc1, num_units=[self.hp.d_ff, self.hp.d_model])
                     enc2 = ff(enc2, num_units=[self.hp.d_ff, self.hp.d_model])
-        memory = (enc1, enc2)
+        self.memory = (enc1, enc2)
         return memory, sents1, src_masks
 
     def decode(self, ys, memory, src_masks, training=True):
