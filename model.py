@@ -78,6 +78,7 @@ class Transformer:
         self.memory = enc1
         return memory, sents1, src_masks
 
+
     def decode(self, ys, memory, src_masks, training=True):
         '''
         memory: encoder outputs. (N, T1, d_model)
